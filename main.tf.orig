@@ -1,0 +1,65 @@
+# This is the AWS provider provider 
+provider "aws" {
+  version = "~> 2.0"
+  region  = "eu-west-2"
+}
+
+resource "aws_vpc" "main" {
+  cidr_block       = "10.3.0.0/16"
+  instance_tenancy = "default"
+
+  tags = {
+    Name = "Charles-VPC"
+  }
+}
+
+resource "aws_subnet" "Charles-Management" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.3.1.0/24"
+  availability_zone = "eu-west-2a"
+
+  tags = {
+    Name = "Charles-Management"
+  }
+}
+
+resource "aws_subnet" "Charles-Production" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.3.2.0/24"
+
+  tags = {
+    Name = "Charles-Production"
+  }
+}
+
+resource "aws_internet_gateway" "Charles-gw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "Charles-gw"
+  }
+}
+
+resource "aws_route_table" "Charles-rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.Charles-gw.id
+  }
+
+  tags = {
+    Name = "Charles-rt"
+  }
+}
+
+resource "aws_route_table_association" "mgmt" {
+  subnet_id      = aws_subnet.Charles-Management.id
+  route_table_id = aws_route_table.Charles-rt.id
+}
+
+resource "aws_route_table_association" "prod" {
+  subnet_id      = aws_subnet.Charles-Production.id
+  route_table_id = aws_route_table.Charles-rt.id
+}
+
